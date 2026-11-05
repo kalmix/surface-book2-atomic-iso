@@ -111,6 +111,8 @@ jobs:
 
       - name: Process, Validate & Checksum Generated ISO
         run: |
+          echo "=== Fixing output permissions ==="
+          sudo chown -R $USER:$USER output
           echo "=== Scanning output directory ==="
           ls -la output/
           find output -type f
@@ -124,7 +126,7 @@ jobs:
           TARGET_ISO="output/${{ inputs.iso_filename }}"
           if [ "$RAW_ISO" != "$TARGET_ISO" ]; then
             echo "Moving $RAW_ISO to $TARGET_ISO..."
-            sudo mv "$RAW_ISO" "$TARGET_ISO"
+            mv "$RAW_ISO" "$TARGET_ISO"
           fi
 
           echo "Generating SHA256 verification hash..."
