@@ -26,7 +26,7 @@ RUN rm -f /etc/yum.repos.d/*negativo*.repo 2>/dev/null || true && \
     curl -fsSL https://repo.librewolf.net/librewolf.repo \
         -o /etc/yum.repos.d/librewolf.repo
 
-# 2. Swap standard Fedora kernel with official linux-surface kernel and install hardware daemons + LibreWolf + DNF stack
+# 2. Swap standard Fedora kernel with official linux-surface kernel and install hardware daemons + LibreWolf + DNF stack + UEFI Bootloader
 RUN (rpm-ostree override remove kernel kernel-core kernel-modules kernel-modules-core kernel-modules-extra libwacom libwacom-data \
         --install kernel-surface \
         --install kernel-surface-devel \
@@ -40,12 +40,22 @@ RUN (rpm-ostree override remove kernel kernel-core kernel-modules kernel-modules
         --install python3-pip \
         --install git \
         --install dnf \
-        --install dnf-plugins-core 2>/dev/null) \
+        --install dnf-plugins-core \
+        --install shim-x64 \
+        --install grub2-efi-x64 \
+        --install grub2-efi-x64-modules \
+        --install grub2-common \
+        --install efibootmgr 2>/dev/null) \
     || ( \
         rpm -e --nodeps $(rpm -qa | grep -E '^kernel-(core|modules|modules-core|modules-extra)?$') libwacom libwacom-data 2>/dev/null || true && \
         dnf5 install -y --allowerasing \
             dnf \
             dnf-plugins-core \
+            shim-x64 \
+            grub2-efi-x64 \
+            grub2-efi-x64-modules \
+            grub2-common \
+            efibootmgr \
             kernel-surface \
             kernel-surface-devel \
             iptsd \
@@ -59,8 +69,10 @@ RUN (rpm-ostree override remove kernel kernel-core kernel-modules kernel-modules
             git \
     )
 
-# 2.1 Guarantee /usr/bin/dnf is executable and valid for bootc-image-builder
-RUN if [ ! -e /usr/bin/dnf ] && [ -e /usr/bin/dnf5 ]; then ln -sf /usr/bin/dnf5 /usr/bin/dnf; fi && \
+# 2.1 Guarantee EFI vendor tree and /usr/bin/dnf for bootc-image-builder
+RUN mkdir -p /boot/efi/EFI/fedora /boot/efi/EFI/BOOT /usr/lib/efi/shim/EFI/fedora && \
+    cp -r /boot/efi/EFI/fedora/* /usr/lib/efi/shim/EFI/fedora/ 2>/dev/null || true && \
+    if [ ! -e /usr/bin/dnf ] && [ -e /usr/bin/dnf5 ]; then ln -sf /usr/bin/dnf5 /usr/bin/dnf; fi && \
     which dnf && (dnf --version || dnf5 --version)
 
 # 3. Copy Hardware Configurations, Scripts, Systemd Units and Kernel Arguments

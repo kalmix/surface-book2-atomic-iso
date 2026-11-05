@@ -17,6 +17,10 @@ chmod 0755 /usr/local/bin/surface-firstboot.sh || true
 mkdir -p /etc/modules-load.d
 echo "msr" > /etc/modules-load.d/msr.conf
 
+# Ensure EFI vendor tree is populated for bootc-image-builder
+mkdir -p /boot/efi/EFI/fedora /boot/efi/EFI/BOOT /usr/lib/efi/shim/EFI/fedora
+cp -r /boot/efi/EFI/fedora/* /usr/lib/efi/shim/EFI/fedora/ 2>/dev/null || true
+
 # Ensure /usr/bin/dnf is accessible for bootc-image-builder
 if [ ! -e /usr/bin/dnf ] && [ -e /usr/bin/dnf5 ]; then
     echo ">>> Linking /usr/bin/dnf5 to /usr/bin/dnf for bootc manifest compatibility..."
