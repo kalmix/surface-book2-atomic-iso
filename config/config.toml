@@ -22,13 +22,13 @@ autopart --type=plain --nohome --fstype=ext4
 bootloader --location=mbr --append="rhgb quiet acpi_backlight=vendor intel_iommu=on mem_sleep_default=deep msr.allow_writes=on"
 
 rootpw --lock
-user --name=surface --groups=wheel --plaintext --password=surface
+user --name=jsl --groups=wheel --plaintext --password=123123
 
 reboot
 
 %post --erroronfail
-echo "%wheel ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/01-wheel-surface
-chmod 0440 /etc/sudoers.d/01-wheel-surface
+echo "%wheel ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/01-wheel-jsl
+chmod 0440 /etc/sudoers.d/01-wheel-jsl
 
 cat << 'EOF' > /etc/modules-load.d/msr.conf
 msr
@@ -39,16 +39,27 @@ systemctl enable surface-dtx-daemon.service || true
 systemctl enable throttled.service || true
 systemctl enable surface-nvidia-power-limit.service || true
 systemctl enable surface-bdprochot-fallback.service || true
+systemctl enable surface-firstboot.service || true
+
+# Provision Flathub and core apps
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || true
+flatpak install -y --system flathub org.localsend.localsend_app || true
+flatpak install -y --system flathub org.deskflow.Deskflow || true
 
 cat << 'EOF' > /etc/motd
 ================================================================================
  Microsoft Surface Book 2 - Fedora Silverblue 40 (Atomic Desktop)
  Hardware Profile: Intel Core i7-8650U | NVIDIA GeForce GTX 1050 Mobile
+ User Account: jsl (wheel / sudo)
  Power Mode: AC Wall Power Optimization (Dead Battery Resilience Mode)
  Active Protections:
    - throttled: BDPROCHOT=False (400 MHz throttle bypass active)
    - GPU Power Cap: 45W via nvidia-smi (AC supply brownout protection)
    - Drivers: kernel-surface, iptsd (touch/pen), surface-dtx-daemon (detach)
+ Preloaded Software:
+   - LibreWolf (RPM)
+   - Deskflow (RPM / Flatpak)
+   - LocalSend (Flatpak: org.localsend.localsend_app)
 ================================================================================
 EOF
 %end

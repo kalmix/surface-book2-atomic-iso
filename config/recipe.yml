@@ -16,8 +16,10 @@ modules:
     repos:
       - https://pkg.surfacelinux.com/fedora/linux-surface.repo
       - https://copr.fedorainfracloud.org/coprs/abn/throttled/repo/fedora-%OS_VERSION%/abn-throttled-fedora-%OS_VERSION%.repo
+      - https://repo.librewolf.net/librewolf.repo
     keys:
       - https://raw.githubusercontent.com/linux-surface/linux-surface/master/pkg/keys/surface.asc
+      - https://repo.librewolf.net/pubkey.gpg
     remove:
       - kernel
       - kernel-core
@@ -39,6 +41,19 @@ modules:
       # Thermal & Power Management Tools
       - throttled
       - msr-tools
+      # Native Pre-installed Software
+      - librewolf
+      - deskflow
+
+  - type: default-flatpaks
+    configurations:
+      - notify: true
+        scope: system
+        repo-url: https://dl.flathub.org/repo/flathub.flatpakrepo
+        repo-name: flathub
+        install:
+          - org.localsend.localsend_app
+          - org.deskflow.Deskflow
 
   - type: systemd
     system:
@@ -48,6 +63,7 @@ modules:
         - throttled.service
         - surface-nvidia-power-limit.service
         - surface-bdprochot-fallback.service
+        - surface-firstboot.service
 
   - type: script
     scripts:

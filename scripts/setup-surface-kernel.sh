@@ -11,6 +11,7 @@ echo ">>> Configuring Surface Book 2 kernel environment and systemd units..."
 # Set executable permissions on utility scripts
 chmod 0755 /usr/local/bin/surface-nvidia-power-limit.sh || true
 chmod 0755 /usr/local/bin/disable-bd-prochot.sh || true
+chmod 0755 /usr/local/bin/surface-firstboot.sh || true
 
 # Autoload msr module at boot
 mkdir -p /etc/modules-load.d
@@ -32,5 +33,9 @@ systemctl enable surface-dtx-daemon.service || true
 systemctl enable throttled.service || true
 systemctl enable surface-nvidia-power-limit.service || true
 systemctl enable surface-bdprochot-fallback.service || true
+systemctl enable surface-firstboot.service || true
+
+# Ensure Flathub repository is pre-configured
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || true
 
 echo ">>> Surface kernel staging completed successfully."

@@ -14,10 +14,18 @@ Repositorio y pipeline CI/CD con **GitHub Actions** para generar una imagen OCI 
 ### Mitigaciones de Hardware Implementadas:
 1. **Bloqueo a 400 MHz por `BDPROCHOT` (Bi-Directional Processor Hot):**
    * *Problema:* El controlador embebido (EC / Surface Aggregator Module) detecta el fallo/ausencia de batería y activa la señal `BDPROCHOT` hacia la CPU, congelando el reloj a la frecuencia mínima de emergencia (**400 MHz / 0.4 GHz**).
-   * *Solución:* Integración de **`throttled`** preconfigurado con `BDPROCHOT: False` en los perfiles `[AC]` y `[BATTERY]`, respaldado por el servicio de contingencia a nivel de kernel **`surface-bdprochot-fallback.service`** que limpia directamente el bit 0 del registro MSR `0x1FC` en el arranque y al reanudar de suspensión.
+   * *Solución:* Integración de **`throttled`** preconfigurado con `BDPROCHOT: False` en los perfiles `[AC]` y `[BATTERY]`, respaldado por el servicio de contingencia a nivel de kernel **`surface-bdprochot-fallback.service`** que limpia directamente el bit 0 del registro MSR `0x1FC` en el arranque y tras cada ciclo de suspensión/reanudación.
 2. **Caídas Súbitas del Sistema por Picos de Consumo (Power Spikes / Brownouts):**
    * *Problema:* El cargador estándar (102W Surface Connect o cargadores USB-C PD de 65W–100W) no cuenta con el amortiguador químico de la batería (*battery boosting*). Un pico simultáneo de CPU + GPU supera el límite de corriente del adaptador y activa la protección contra sobrecorriente (OCP), apagando la máquina de golpe.
    * *Solución:* Servicio systemd **`surface-nvidia-power-limit.service`** ejecutado en el arranque que activa el modo de persistencia (`nvidia-smi -pm 1`) y capa el consumo de la GTX 1050 a **45W** (`nvidia-smi -pl 45`).
+
+---
+
+## 📦 Software Integrado y Preconfigurado
+
+* **Navegador Web:** **LibreWolf** instalado de forma nativa vía su repositorio oficial (`https://repo.librewolf.net/librewolf.repo`).
+* **Compartición de periféricos (Software KVM):** **Deskflow** preinstalado nativamente vía RPM / Flatpak (`org.deskflow.Deskflow`) con soporte completo para Wayland (`libei`).
+* **Transferencia de archivos local:** **LocalSend** (`org.localsend.localsend_app`) integrado vía Flathub, provisionado automáticamente al primer arranque mediante el servicio desatendido `surface-firstboot.service`.
 
 ---
 
@@ -35,7 +43,8 @@ Repositorio y pipeline CI/CD con **GitHub Actions** para generar una imagen OCI 
   * Idioma: Inglés (`lang en_US.UTF-8`).
   * Distribución de teclado: Inglés (`keyboard us` / `--vckeymap=us`).
   * Zona horaria: `America/Santo_Domingo` (UTC).
-  * Usuario predefinido: `surface` (perteneciente a `wheel` con privilegios `sudo`).
+  * Usuario predefinido: `jsl` (perteneciente a `wheel` con privilegios `sudo`).
+  * Contraseña inicial: `123123`.
   * Particionado NVMe: Wiping completo automático (`zerombr`, `clearpart --all`), asignación generosa para `/boot/efi` (1GB) y `/boot` (2GB) para prevenir desbordamientos de initramfs.
   * Reinicio automático al terminar (`reboot`).
 * **Generación de ISO:**
@@ -61,25 +70,34 @@ Repositorio y pipeline CI/CD con **GitHub Actions** para generar una imagen OCI 
 ├── scripts/
 │   ├── disable-bd-prochot.sh       # Script de override directo MSR 0x1FC
 │   ├── setup-surface-kernel.sh     # Preparación y compilación de akmods
+│   ├── surface-firstboot.sh        # Aprovisionamiento desatendido de Flatpaks (LocalSend, Deskflow)
 │   └── surface-nvidia-power-limit.sh # Script de limitación de la GPU a 45W
 ├── systemd/
 │   ├── surface-bdprochot-fallback.service # Servicio systemd para BDPROCHOT
-│   └── surface-nvidia-power-limit.service  # Servicio systemd para GPU Power Cap
+│   ├── surface-firstboot.service          # Servicio systemd de primer arranque
+│   └── surface-nvidia-power-limit.service # Servicio systemd para GPU Power Cap
 ├── Containerfile                   # Definición reproducible OCI para Podman/Docker
+├── .gitattributes
 ├── .gitignore
 └── README.md
 ```
 
 ---
 
-## 🚀 Flujo de Compilación (GitHub Actions)
+## 🔑 Credenciales y Primer Arranque
+
+* **Usuario:** `jsl`
+* **Contraseña predeterminada:** `123123`
+* **Privilegios:** Sudo total sin contraseña configurado en `/etc/sudoers.d/01-wheel-jsl`.
+
+---
+
+## 🚀 Cómo Lanzar la Compilación (GitHub Actions)
 
 El flujo de trabajo `.github/workflows/build.yml` está configurado con **`workflow_dispatch`** para evitar ejecuciones automáticas accidentales en el push de Git.
 
-### Cómo disparar la compilación:
-
-#### Opción A: Desde GitHub CLI (`gh`) en tu terminal
-```bash
+### Opción A: Desde GitHub CLI (`gh`) en tu terminal
+```powershell
 # Lanzar la compilación con los parámetros por defecto
 gh workflow run "Build Surface Book 2 Atomic ISO"
 
@@ -87,55 +105,9 @@ gh workflow run "Build Surface Book 2 Atomic ISO"
 gh run watch
 ```
 
-#### Opción B: Desde la interfaz web de GitHub
-1. Entra a tu repositorio en GitHub: `https://github.com/kalmix/surface-book2-atomic-iso`.
-2. Ve a la pestaña **Actions**.
-3. Selecciona el flujo **Build Surface Book 2 Atomic ISO** en la barra lateral izquierda.
-4. Haz clic en el botón desplegable **Run workflow**, mantén o ajusta los parámetros y pulsa el botón verde **Run workflow**.
+### Opción B: Desde la interfaz web de GitHub
+1. Abre tu repositorio: [https://github.com/kalmix/surface-book2-atomic-iso/actions](https://github.com/kalmix/surface-book2-atomic-iso/actions)
+2. Selecciona **Build Surface Book 2 Atomic ISO** en la barra lateral.
+3. Pulsa **Run workflow** -> botón verde **Run workflow**.
 
----
-
-## 📦 Descarga y Verificación del Artefacto
-
-Al terminar la ejecución del workflow:
-1. En la página de detalles de la ejecución de GitHub Actions, descarga el artefacto **`surface-book-2-silverblue-40.iso`**.
-2. Verifica la integridad con la suma SHA256 descargada:
-   ```bash
-   sha256sum -c surface-book-2-silverblue-40.iso.sha256
-   ```
-3. Graba la ISO en una unidad USB con herramientas como **Fedora Media Writer**, **Rufus** (modo DD) o vía terminal:
-   ```bash
-   sudo dd if=surface-book-2-silverblue-40.iso of=/dev/sdX bs=4M status=progress conv=fsync
-   ```
-
----
-
-## 🔑 Credenciales y Primer Arranque
-
-* **Usuario:** `surface`
-* **Contraseña predeterminada:** `surface`
-* **Privilegios:** Sudo total sin contraseña configurado en `/etc/sudoers.d/01-wheel-surface`.
-
-### Verificaciones Recomendadas tras Instalar:
-
-1. **Confirmar que la CPU no está bloqueada a 400 MHz:**
-   ```bash
-   lscpu | grep "CPU MHz"
-   ```
-2. **Verificar estado de `throttled` y `BDPROCHOT`:**
-   ```bash
-   sudo systemctl status throttled.service
-   sudo throttled --monitor
-   ```
-3. **Verificar el límite de potencia de la GTX 1050 (45W):**
-   ```bash
-   nvidia-smi --query-gpu=name,power.limit,power.draw --format=csv
-   ```
-4. **Verificar el touchscreen y stylus:**
-   ```bash
-   sudo systemctl status iptsd.service
-   ```
-5. **Verificar el desacoplamiento de la pantalla:**
-   ```bash
-   sudo systemctl status surface-dtx-daemon.service
-   ```
+Al finalizar, la ISO (`surface-book-2-silverblue-40.iso`) y su suma SHA256 estarán disponibles como artefactos descargables listos para flashear en USB.

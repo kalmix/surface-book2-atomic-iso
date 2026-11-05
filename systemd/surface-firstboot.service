@@ -1,0 +1,15 @@
+[Unit]
+Description=Surface Book 2 First-Boot Application Provisioning (LocalSend & Deskflow)
+Documentation=https://github.com/kalmix/surface-book2-atomic-iso
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/surface-firstboot.sh
+StandardOutput=journal+console
+StandardError=journal+console
+
+[Install]
+WantedBy=multi-user.target graphical.target
