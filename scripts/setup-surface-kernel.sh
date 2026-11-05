@@ -17,14 +17,13 @@ chmod 0755 /usr/local/bin/surface-firstboot.sh || true
 mkdir -p /etc/modules-load.d
 echo "msr" > /etc/modules-load.d/msr.conf
 
-# Install throttled from official upstream git repository
-if [ ! -d /opt/throttled ]; then
-    echo ">>> Installing throttled from upstream git..."
-    rm -rf /tmp/throttled
-    git clone https://github.com/erpalma/throttled.git /tmp/throttled
-    cd /tmp/throttled
-    ./install.sh --init systemd --no-start
-    rm -rf /tmp/throttled
+# Install throttled cleanly into /usr/lib/throttled (Atomic/OSTree safe: avoids /opt symlink issues)
+if [ ! -d /usr/lib/throttled/venv ]; then
+    echo ">>> Installing throttled from upstream git into /usr/lib/throttled..."
+    mkdir -p /usr/lib/throttled
+    python3 -m venv --system-site-packages /usr/lib/throttled/venv
+    /usr/lib/throttled/venv/bin/pip install --no-cache-dir git+https://github.com/erpalma/throttled.git
+    ln -sf /usr/lib/throttled/venv/bin/throttled /usr/local/bin/throttled || true
 fi
 
 # Rebuild NVIDIA kernel module against the Surface kernel if akmods is present

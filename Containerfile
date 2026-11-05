@@ -63,6 +63,7 @@ COPY scripts/surface-nvidia-power-limit.sh /usr/local/bin/surface-nvidia-power-l
 COPY scripts/disable-bd-prochot.sh /usr/local/bin/disable-bd-prochot.sh
 COPY scripts/surface-firstboot.sh /usr/local/bin/surface-firstboot.sh
 COPY scripts/setup-surface-kernel.sh /tmp/setup-surface-kernel.sh
+COPY systemd/throttled.service /etc/systemd/system/throttled.service
 COPY systemd/surface-nvidia-power-limit.service /etc/systemd/system/surface-nvidia-power-limit.service
 COPY systemd/surface-bdprochot-fallback.service /etc/systemd/system/surface-bdprochot-fallback.service
 COPY systemd/surface-firstboot.service /etc/systemd/system/surface-firstboot.service

@@ -1,0 +1,13 @@
+[Unit]
+Description=Stop Intel throttling (Surface Book 2 BDPROCHOT Bypass)
+Documentation=https://github.com/erpalma/throttled
+After=local-fs.target sysinit.target dbus.service
+
+[Service]
+Type=simple
+ExecStart=/usr/lib/throttled/venv/bin/throttled
+Environment=PYTHONUNBUFFERED=1
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
