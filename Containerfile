@@ -23,39 +23,37 @@ RUN curl -fsSL https://raw.githubusercontent.com/linux-surface/linux-surface/mas
         -o /etc/yum.repos.d/linux-surface.repo && \
     sed -i "s/\$releasever/${SURFACE_RELEASEVER}/g" /etc/yum.repos.d/linux-surface.repo && \
     curl -fsSL https://repo.librewolf.net/librewolf.repo \
-        -o /etc/yum.repos.d/librewolf.repo && \
-    curl -fsSL https://copr.fedorainfracloud.org/coprs/abn/throttled/repo/fedora-${SURFACE_RELEASEVER}/abn-throttled-fedora-${SURFACE_RELEASEVER}.repo \
-        -o /etc/yum.repos.d/abn-throttled.repo
+        -o /etc/yum.repos.d/librewolf.repo
 
 # 2. Swap standard Fedora kernel with official linux-surface kernel and install hardware daemons + LibreWolf + Deskflow
 RUN (rpm-ostree override remove kernel kernel-core kernel-modules kernel-modules-core kernel-modules-extra libwacom libwacom-data \
         --install kernel-surface \
         --install kernel-surface-devel \
-        --install kernel-surface-default-watchdog \
         --install iptsd \
         --install libwacom-surface \
         --install libwacom-surface-data \
         --install surface-dtx-daemon \
         --install surface-secureboot \
-        --install throttled \
         --install msr-tools \
         --install librewolf \
-        --install deskflow 2>/dev/null) \
+        --install deskflow \
+        --install python3-pip \
+        --install git 2>/dev/null) \
     || ( \
         rpm -e --nodeps $(rpm -qa | grep -E '^kernel-(core|modules|modules-core|modules-extra)?$') libwacom libwacom-data 2>/dev/null || true && \
         dnf5 install -y --allowerasing \
             kernel-surface \
             kernel-surface-devel \
-            kernel-surface-default-watchdog \
             iptsd \
             libwacom-surface \
             libwacom-surface-data \
             surface-dtx-daemon \
             surface-secureboot \
-            throttled \
             msr-tools \
             librewolf \
             deskflow \
+            python3-pip \
+            git \
     )
 
 # 3. Copy Hardware Configurations, Scripts, Systemd Units and Kernel Arguments

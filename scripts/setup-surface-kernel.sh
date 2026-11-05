@@ -17,6 +17,16 @@ chmod 0755 /usr/local/bin/surface-firstboot.sh || true
 mkdir -p /etc/modules-load.d
 echo "msr" > /etc/modules-load.d/msr.conf
 
+# Install throttled from official upstream git repository
+if [ ! -d /opt/throttled ]; then
+    echo ">>> Installing throttled from upstream git..."
+    rm -rf /tmp/throttled
+    git clone https://github.com/erpalma/throttled.git /tmp/throttled
+    cd /tmp/throttled
+    ./install.sh --init systemd --no-start
+    rm -rf /tmp/throttled
+fi
+
 # Rebuild NVIDIA kernel module against the Surface kernel if akmods is present
 if command -v akmods &>/dev/null; then
     KVER=$(rpm -qa --qf "%{VERSION}-%{RELEASE}.%{ARCH}\n" kernel-surface | head -n1 || true)
