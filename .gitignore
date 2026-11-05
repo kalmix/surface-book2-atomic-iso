@@ -1,6 +1,7 @@
 # Output directory for ISO artifacts
 output/
 *.iso
+!scripts/org.osbuild.grub2.iso
 *.iso.sha256
 
 # Temporary container and builder caches
