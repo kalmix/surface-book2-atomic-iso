@@ -1,0 +1,55 @@
+# ==============================================================================
+# bootc-image-builder Configuration for Microsoft Surface Book 2
+# Generates an unattended bootable Anaconda ISO for Fedora Silverblue 40
+# ==============================================================================
+
+[customizations.installer.kickstart]
+contents = """
+text
+cmdline
+skipx
+firstboot --disable
+
+lang en_US.UTF-8
+keyboard --vckeymap=us --xlayouts=us
+timezone America/Santo_Domingo --utc
+
+network --bootproto=dhcp --device=link --activate --onboot=on
+
+zerombr
+clearpart --all --initlabel --disklabel=gpt
+autopart --type=plain --nohome --fstype=ext4
+bootloader --location=mbr --append="rhgb quiet acpi_backlight=vendor intel_iommu=on mem_sleep_default=deep msr.allow_writes=on"
+
+rootpw --lock
+user --name=surface --groups=wheel --plaintext --password=surface
+
+reboot
+
+%post --erroronfail
+echo "%wheel ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/01-wheel-surface
+chmod 0440 /etc/sudoers.d/01-wheel-surface
+
+cat << 'EOF' > /etc/modules-load.d/msr.conf
+msr
+EOF
+
+systemctl enable iptsd.service || true
+systemctl enable surface-dtx-daemon.service || true
+systemctl enable throttled.service || true
+systemctl enable surface-nvidia-power-limit.service || true
+systemctl enable surface-bdprochot-fallback.service || true
+
+cat << 'EOF' > /etc/motd
+================================================================================
+ Microsoft Surface Book 2 - Fedora Silverblue 40 (Atomic Desktop)
+ Hardware Profile: Intel Core i7-8650U | NVIDIA GeForce GTX 1050 Mobile
+ Power Mode: AC Wall Power Optimization (Dead Battery Resilience Mode)
+ Active Protections:
+   - throttled: BDPROCHOT=False (400 MHz throttle bypass active)
+   - GPU Power Cap: 45W via nvidia-smi (AC supply brownout protection)
+   - Drivers: kernel-surface, iptsd (touch/pen), surface-dtx-daemon (detach)
+================================================================================
+EOF
+%end
+"""

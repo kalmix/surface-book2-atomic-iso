@@ -1,0 +1,16 @@
+[Unit]
+Description=Surface Book 2 NVIDIA GTX 1050 45W Power Cap (Anti-Brownout)
+Documentation=https://github.com/kalmix/surface-book2-atomic-iso
+After=systemd-modules-load.service
+Before=display-manager.service graphical.target
+Wants=systemd-modules-load.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/surface-nvidia-power-limit.sh
+StandardOutput=journal+console
+StandardError=journal+console
+
+[Install]
+WantedBy=multi-user.target graphical.target

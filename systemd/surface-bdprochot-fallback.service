@@ -1,0 +1,17 @@
+[Unit]
+Description=Surface BDPROCHOT Direct Hardware Mitigation (Bypass 400 MHz Throttle)
+Documentation=https://github.com/kalmix/surface-book2-atomic-iso
+After=systemd-modules-load.service
+Before=throttled.service
+# Trigger on boot and upon resume from sleep/suspend
+After=suspend.target hibernate.target hybrid-sleep.target suspend-then-hibernate.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/disable-bd-prochot.sh
+StandardOutput=journal+console
+StandardError=journal+console
+
+[Install]
+WantedBy=multi-user.target suspend.target hibernate.target hybrid-sleep.target suspend-then-hibernate.target

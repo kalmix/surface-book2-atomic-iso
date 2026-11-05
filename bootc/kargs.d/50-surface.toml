@@ -1,0 +1,13 @@
+# ==============================================================================
+# Declarative Kernel Arguments for Surface Book 2 (bootc / ostree)
+# ==============================================================================
+
+kargs = [
+    "rhgb",
+    "quiet",
+    "intel_iommu=on",
+    "mem_sleep_default=deep",
+    "msr.allow_writes=on",
+    "acpi_backlight=vendor"
+]
+match-architectures = ["x86_64"]

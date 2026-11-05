@@ -1,0 +1,54 @@
+---
+# yaml-language-server: $schema=https://schema.blue-build.org/recipe-v1.json
+
+name: silverblue-surface-book2
+description: Fedora Silverblue 40 Atomic Desktop for Microsoft Surface Book 2 (Intel i7 + GTX 1050, Dead Battery Resilience)
+base-image: ghcr.io/ublue-os/silverblue-nvidia
+image-version: 40
+
+modules:
+  - type: files
+    files:
+      - usr: /usr
+      - etc: /etc
+
+  - type: rpm-ostree
+    repos:
+      - https://pkg.surfacelinux.com/fedora/linux-surface.repo
+      - https://copr.fedorainfracloud.org/coprs/abn/throttled/repo/fedora-%OS_VERSION%/abn-throttled-fedora-%OS_VERSION%.repo
+    keys:
+      - https://raw.githubusercontent.com/linux-surface/linux-surface/master/pkg/keys/surface.asc
+    remove:
+      - kernel
+      - kernel-core
+      - kernel-modules
+      - kernel-modules-core
+      - kernel-modules-extra
+      - libwacom
+      - libwacom-data
+    install:
+      # Official Linux Surface Kernel & Hardware Stack
+      - kernel-surface
+      - kernel-surface-devel
+      - kernel-surface-default-watchdog
+      - iptsd
+      - surface-dtx-daemon
+      - libwacom-surface
+      - libwacom-surface-data
+      - surface-secureboot
+      # Thermal & Power Management Tools
+      - throttled
+      - msr-tools
+
+  - type: systemd
+    system:
+      enabled:
+        - iptsd.service
+        - surface-dtx-daemon.service
+        - throttled.service
+        - surface-nvidia-power-limit.service
+        - surface-bdprochot-fallback.service
+
+  - type: script
+    scripts:
+      - setup-surface-kernel.sh

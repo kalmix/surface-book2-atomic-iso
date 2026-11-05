@@ -1,0 +1,14 @@
+# Output directory for ISO artifacts
+output/
+*.iso
+*.iso.sha256
+
+# Temporary container and builder caches
+.cache/
+tmp/
+*.tmp
+
+# OS specific files
+.DS_Store
+Thumbs.db
+desktop.ini
