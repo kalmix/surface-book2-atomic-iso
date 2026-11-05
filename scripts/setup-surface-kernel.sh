@@ -17,6 +17,12 @@ chmod 0755 /usr/local/bin/surface-firstboot.sh || true
 mkdir -p /etc/modules-load.d
 echo "msr" > /etc/modules-load.d/msr.conf
 
+# Ensure /usr/bin/dnf is accessible for bootc-image-builder
+if [ ! -e /usr/bin/dnf ] && [ -e /usr/bin/dnf5 ]; then
+    echo ">>> Linking /usr/bin/dnf5 to /usr/bin/dnf for bootc manifest compatibility..."
+    ln -sf /usr/bin/dnf5 /usr/bin/dnf
+fi
+
 # Install throttled cleanly into /usr/lib/throttled (Atomic/OSTree safe: avoids /opt symlink issues)
 if [ ! -d /usr/lib/throttled/venv ]; then
     echo ">>> Installing throttled from upstream git into /usr/lib/throttled..."

@@ -12,8 +12,9 @@ LABEL maintainer="kalmix" \
       org.opencontainers.image.description="Fedora Silverblue 40 with linux-surface kernel, LibreWolf, Deskflow and 65W USB-C mitigations for Surface Book 2" \
       org.opencontainers.image.version="40"
 
-# 1. Import official GPG Keys (Linux Surface, LibreWolf) and Setup Repositories
-RUN curl -fsSL https://raw.githubusercontent.com/linux-surface/linux-surface/master/pkg/keys/surface.asc \
+# 1. Clean up broken repos, import official GPG Keys and Setup Repositories
+RUN rm -f /etc/yum.repos.d/*negativo*.repo 2>/dev/null || true && \
+    curl -fsSL https://raw.githubusercontent.com/linux-surface/linux-surface/master/pkg/keys/surface.asc \
         -o /etc/pki/rpm-gpg/RPM-GPG-KEY-surface && \
     rpm --import /etc/pki/rpm-gpg/RPM-GPG-KEY-surface && \
     curl -fsSL https://repo.librewolf.net/pubkey.gpg \
@@ -25,7 +26,7 @@ RUN curl -fsSL https://raw.githubusercontent.com/linux-surface/linux-surface/mas
     curl -fsSL https://repo.librewolf.net/librewolf.repo \
         -o /etc/yum.repos.d/librewolf.repo
 
-# 2. Swap standard Fedora kernel with official linux-surface kernel and install hardware daemons + LibreWolf
+# 2. Swap standard Fedora kernel with official linux-surface kernel and install hardware daemons + LibreWolf + DNF stack
 RUN (rpm-ostree override remove kernel kernel-core kernel-modules kernel-modules-core kernel-modules-extra libwacom libwacom-data \
         --install kernel-surface \
         --install kernel-surface-devel \
@@ -37,10 +38,14 @@ RUN (rpm-ostree override remove kernel kernel-core kernel-modules kernel-modules
         --install msr-tools \
         --install librewolf \
         --install python3-pip \
-        --install git 2>/dev/null) \
+        --install git \
+        --install dnf \
+        --install dnf-plugins-core 2>/dev/null) \
     || ( \
         rpm -e --nodeps $(rpm -qa | grep -E '^kernel-(core|modules|modules-core|modules-extra)?$') libwacom libwacom-data 2>/dev/null || true && \
         dnf5 install -y --allowerasing \
+            dnf \
+            dnf-plugins-core \
             kernel-surface \
             kernel-surface-devel \
             iptsd \
@@ -53,6 +58,10 @@ RUN (rpm-ostree override remove kernel kernel-core kernel-modules kernel-modules
             python3-pip \
             git \
     )
+
+# 2.1 Guarantee /usr/bin/dnf is executable and valid for bootc-image-builder
+RUN if [ ! -e /usr/bin/dnf ] && [ -e /usr/bin/dnf5 ]; then ln -sf /usr/bin/dnf5 /usr/bin/dnf; fi && \
+    which dnf && (dnf --version || dnf5 --version)
 
 # 3. Copy Hardware Configurations, Scripts, Systemd Units and Kernel Arguments
 COPY config/throttled.conf /etc/throttled.conf
@@ -78,5 +87,6 @@ RUN chmod +x /usr/local/bin/surface-nvidia-power-limit.sh \
     rm -f /tmp/setup-surface-kernel.sh
 
 # 5. Clean package managers and temporary files
-RUN (dnf5 clean all 2>/dev/null || true) && \
-    rm -rf /var/cache/* /tmp/* /var/tmp/*
+RUN (dnf clean all 2>/dev/null || true) && \
+    (dnf5 clean all 2>/dev/null || true) && \
+    rm -rf /tmp/* /var/tmp/*

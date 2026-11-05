@@ -109,7 +109,12 @@ jobs:
             exit 1
           fi
 
-          TARGET_ISO="output/${{ inputs.iso_filename }}"
+          TARGET_FILENAME="${{ inputs.iso_filename }}"
+          if [ -z "$TARGET_FILENAME" ]; then
+            TARGET_FILENAME="surface-book-2-silverblue-40.iso"
+          fi
+
+          TARGET_ISO="output/${TARGET_FILENAME}"
           if [ "$RAW_ISO" != "$TARGET_ISO" ]; then
             echo "Moving $RAW_ISO to $TARGET_ISO..."
             mv "$RAW_ISO" "$TARGET_ISO"
@@ -117,17 +122,17 @@ jobs:
 
           echo "Generating SHA256 verification hash..."
           cd output
-          sha256sum "${{ inputs.iso_filename }}" > "${{ inputs.iso_filename }}.sha256"
-          cat "${{ inputs.iso_filename }}.sha256"
-          ls -lh "${{ inputs.iso_filename }}"
+          sha256sum "${TARGET_FILENAME}" > "${TARGET_FILENAME}.sha256"
+          cat "${TARGET_FILENAME}.sha256"
+          ls -lh "${TARGET_FILENAME}"
 
       - name: Upload Bootable ISO Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ inputs.iso_filename }}
+          name: ${{ inputs.iso_filename || 'surface-book-2-silverblue-40.iso' }}
           path: |
-            output/${{ inputs.iso_filename }}
-            output/${{ inputs.iso_filename }}.sha256
+            output/${{ inputs.iso_filename || 'surface-book-2-silverblue-40.iso' }}
+            output/${{ inputs.iso_filename || 'surface-book-2-silverblue-40.iso' }}.sha256
           retention-days: 5
           compression-level: 1
           if-no-files-found: error
