@@ -45,7 +45,7 @@ systemctl enable surface-firstboot.service || true
 # Provision Flathub and core apps
 flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo || true
 flatpak install -y --system flathub org.localsend.localsend_app || true
-flatpak install -y --system flathub org.deskflow.Deskflow || true
+flatpak install -y --system flathub org.deskflow.deskflow || true
 
 cat << 'EOF' > /etc/motd
 ================================================================================

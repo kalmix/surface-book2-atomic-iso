@@ -25,7 +25,7 @@ RUN curl -fsSL https://raw.githubusercontent.com/linux-surface/linux-surface/mas
     curl -fsSL https://repo.librewolf.net/librewolf.repo \
         -o /etc/yum.repos.d/librewolf.repo
 
-# 2. Swap standard Fedora kernel with official linux-surface kernel and install hardware daemons + LibreWolf + Deskflow
+# 2. Swap standard Fedora kernel with official linux-surface kernel and install hardware daemons + LibreWolf
 RUN (rpm-ostree override remove kernel kernel-core kernel-modules kernel-modules-core kernel-modules-extra libwacom libwacom-data \
         --install kernel-surface \
         --install kernel-surface-devel \
@@ -36,7 +36,6 @@ RUN (rpm-ostree override remove kernel kernel-core kernel-modules kernel-modules
         --install surface-secureboot \
         --install msr-tools \
         --install librewolf \
-        --install deskflow \
         --install python3-pip \
         --install git 2>/dev/null) \
     || ( \
@@ -51,7 +50,6 @@ RUN (rpm-ostree override remove kernel kernel-core kernel-modules kernel-modules
             surface-secureboot \
             msr-tools \
             librewolf \
-            deskflow \
             python3-pip \
             git \
     )

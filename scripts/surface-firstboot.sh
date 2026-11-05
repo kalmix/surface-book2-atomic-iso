@@ -35,10 +35,12 @@ if [ "$CONNECTED" -eq 1 ]; then
         echo "[Surface First-Boot] LocalSend is already installed."
     fi
 
-    # Install Deskflow Flatpak (if not already installed via RPM)
-    if ! command -v deskflow &>/dev/null && ! flatpak info org.deskflow.Deskflow &>/dev/null; then
-        echo "[Surface First-Boot] Installing Deskflow Flatpak..."
-        flatpak install -y --system flathub org.deskflow.Deskflow || true
+    # Install Deskflow Flatpak
+    if ! flatpak info org.deskflow.deskflow &>/dev/null; then
+        echo "[Surface First-Boot] Installing Deskflow (org.deskflow.deskflow)..."
+        flatpak install -y --system flathub org.deskflow.deskflow || true
+    else
+        echo "[Surface First-Boot] Deskflow is already installed."
     fi
 
     echo "[Surface First-Boot] Flatpak provisioning finished successfully."

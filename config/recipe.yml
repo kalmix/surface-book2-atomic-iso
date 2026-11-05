@@ -42,7 +42,6 @@ modules:
       - git
       # Native Pre-installed Software
       - librewolf
-      - deskflow
 
   - type: default-flatpaks
     configurations:
@@ -52,7 +51,7 @@ modules:
         repo-name: flathub
         install:
           - org.localsend.localsend_app
-          - org.deskflow.Deskflow
+          - org.deskflow.deskflow
 
   - type: systemd
     system:
