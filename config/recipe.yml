@@ -2,7 +2,7 @@
 # yaml-language-server: $schema=https://schema.blue-build.org/recipe-v1.json
 
 name: silverblue-surface-book2
-description: Fedora Silverblue 40 Atomic Desktop for Microsoft Surface Book 2 (Intel i7 + GTX 1050, Dead Battery Resilience)
+description: Fedora Silverblue 40 Atomic Desktop for Microsoft Surface Book 2 (Intel i7 + GTX 1050, 65W USB-C Resilience)
 base-image: ghcr.io/ublue-os/silverblue-nvidia
 image-version: 40
 

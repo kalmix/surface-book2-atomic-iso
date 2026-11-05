@@ -1,6 +1,7 @@
 # ==============================================================================
 # bootc-image-builder Configuration for Microsoft Surface Book 2
 # Generates an unattended bootable Anaconda ISO for Fedora Silverblue 40
+# Tailored for 65W USB-C Charger with 0% / dead battery telemetry
 # ==============================================================================
 
 [customizations.installer.kickstart]
@@ -51,10 +52,11 @@ cat << 'EOF' > /etc/motd
  Microsoft Surface Book 2 - Fedora Silverblue 40 (Atomic Desktop)
  Hardware Profile: Intel Core i7-8650U | NVIDIA GeForce GTX 1050 Mobile
  User Account: jsl (wheel / sudo)
- Power Mode: AC Wall Power Optimization (Dead Battery Resilience Mode)
+ Power Mode: 65W USB-C Adapter Profile (Dead Battery Resilience Mode)
  Active Protections:
    - throttled: BDPROCHOT=False (400 MHz throttle bypass active)
-   - GPU Power Cap: 45W via nvidia-smi (AC supply brownout protection)
+   - CPU Limits: PL1=15W, PL2=22W (safe sustained power envelope)
+   - GPU Power Cap: 30W via nvidia-smi & PowerMizer Adaptive (65W anti-brownout)
    - Drivers: kernel-surface, iptsd (touch/pen), surface-dtx-daemon (detach)
  Preloaded Software:
    - LibreWolf (RPM)

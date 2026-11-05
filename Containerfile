@@ -1,6 +1,6 @@
 # ==============================================================================
 # Microsoft Surface Book 2 - Fedora Silverblue 40 (Atomic Desktop)
-# Specialized OCI Image with linux-surface kernel, LibreWolf & Dead Battery Mitigations
+# Specialized OCI Image with linux-surface kernel, LibreWolf & 65W Power Mitigations
 # ==============================================================================
 
 FROM ghcr.io/ublue-os/silverblue-nvidia:40
@@ -9,7 +9,7 @@ ARG SURFACE_RELEASEVER=40
 
 LABEL maintainer="kalmix" \
       org.opencontainers.image.title="surface-book2-silverblue" \
-      org.opencontainers.image.description="Fedora Silverblue 40 with linux-surface kernel, LibreWolf, Deskflow and hardware mitigations for Surface Book 2" \
+      org.opencontainers.image.description="Fedora Silverblue 40 with linux-surface kernel, LibreWolf, Deskflow and 65W USB-C mitigations for Surface Book 2" \
       org.opencontainers.image.version="40"
 
 # 1. Import official GPG Keys (Linux Surface, LibreWolf) and Setup Repositories
@@ -60,6 +60,8 @@ RUN (rpm-ostree override remove kernel kernel-core kernel-modules kernel-modules
 
 # 3. Copy Hardware Configurations, Scripts, Systemd Units and Kernel Arguments
 COPY config/throttled.conf /etc/throttled.conf
+COPY config/surface-power.conf /etc/surface-power.conf
+COPY config/modprobe-nvidia-power.conf /etc/modprobe.d/nvidia-power.conf
 COPY config/surface-dtx.conf /etc/surface-dtx/surface-dtx-daemon.conf
 COPY scripts/surface-nvidia-power-limit.sh /usr/local/bin/surface-nvidia-power-limit.sh
 COPY scripts/disable-bd-prochot.sh /usr/local/bin/disable-bd-prochot.sh

@@ -1,30 +1,46 @@
 # Microsoft Surface Book 2 (13.5" i7 / GTX 1050) - Fedora Silverblue 40 Unattended ISO
 
-Repositorio y pipeline CI/CD con **GitHub Actions** para generar una imagen OCI y una **ISO desatendida booteable** de **Fedora Silverblue 40 (Atomic Desktop con GNOME)** adaptada para hardware **Microsoft Surface Book 2** con baterías degradadas/muertas (operación 100% fija a corriente alterna).
+Repositorio y pipeline CI/CD con **GitHub Actions** para generar una imagen OCI y una **ISO desatendida booteable** de **Fedora Silverblue 40 (Atomic Desktop con GNOME)** adaptada para hardware **Microsoft Surface Book 2** operando con **cargador USB-C de 65W** y baterías degradadas/muertas (operación 100% fija a corriente alterna).
 
 ---
 
-## 💻 Hardware Objetivo y Contexto Crítico
+## ⚡ Presupuesto Eléctrico Estricto: Cargador USB-C de 65W
+
+Cuando un Surface Book 2 opera con un cargador USB-C de 65W y **baterías muertas al 0%**, no existe buffer químico de respaldo (*battery discharge assist*). Cualquier consumo momentáneo que exceda los 65W provoca la caída de voltaje en la línea PD o dispara el OCP (Over-Current Protection), provocando el **apagado súbito inmediato (blackout)**.
+
+### Desglose del Presupuesto Energético Dinámico (~60W):
+* **Plataforma Base:** Pantalla PixelSense 3000x2000, placa base, memoria RAM, SSD NVMe, ventiladores y Wi-Fi: **~15W**.
+* **CPU Intel Core i7-8650U:** Limitado sostenido a **15W** (PL1) con picos cortos de **22W** (PL2) vía `throttled`.
+* **GPU NVIDIA GeForce GTX 1050 Mobile:** Capada a **30W** vía `nvidia-smi -pl 30`, techo de reloj a **1100 MHz** y PowerMizer en modo *Adaptive* (`0x2`).
+* **Consumo Pico Máximo Total:** 15W (base) + 15W (CPU) + 30W (GPU) = **~60W** (margen de seguridad de 5W frente al límite de 65W).
+
+---
+
+## 💻 Hardware Objetivo y Mitigaciones Críticas
 
 * **Dispositivo:** Microsoft Surface Book 2 (13.5 pulgadas).
-* **CPU:** Intel Core i7-8650U (4C/8T, 1.9 GHz base, hasta 4.2 GHz Turbo).
+* **CPU:** Intel Core i7-8650U (4C/8T, 1.9 GHz base, Turbo ajustado a 22W).
 * **dGPU:** NVIDIA GeForce GTX 1050 Mobile (2GB GDDR5).
-* **Estado Energético:** **Ambas baterías (pantalla y base) muertas / no cargan (0% persistente)**.
+* **Alimentación:** Cargador USB-C PD de 65W.
 
 ### Mitigaciones de Hardware Implementadas:
-1. **Bloqueo a 400 MHz por `BDPROCHOT` (Bi-Directional Processor Hot):**
-   * *Problema:* El controlador embebido (EC / Surface Aggregator Module) detecta el fallo/ausencia de batería y activa la señal `BDPROCHOT` hacia la CPU, congelando el reloj a la frecuencia mínima de emergencia (**400 MHz / 0.4 GHz**).
-   * *Solución:* Integración de **`throttled`** preconfigurado con `BDPROCHOT: False` en los perfiles `[AC]` y `[BATTERY]`, respaldado por el servicio de contingencia a nivel de kernel **`surface-bdprochot-fallback.service`** que limpia directamente el bit 0 del registro MSR `0x1FC` en el arranque y tras cada ciclo de suspensión/reanudación.
-2. **Caídas Súbitas del Sistema por Picos de Consumo (Power Spikes / Brownouts):**
-   * *Problema:* El cargador estándar (102W Surface Connect o cargadores USB-C PD de 65W–100W) no cuenta con el amortiguador químico de la batería (*battery boosting*). Un pico simultáneo de CPU + GPU supera el límite de corriente del adaptador y activa la protección contra sobrecorriente (OCP), apagando la máquina de golpe.
-   * *Solución:* Servicio systemd **`surface-nvidia-power-limit.service`** ejecutado en el arranque que activa el modo de persistencia (`nvidia-smi -pm 1`) y capa el consumo de la GTX 1050 a **45W** (`nvidia-smi -pl 45`).
+1. **Bypass del Bloqueo a 400 MHz (`BDPROCHOT`):**
+   * El controlador embebido (EC / SAM) al ver 0% de batería activa la señal de alarma `BDPROCHOT` a la CPU.
+   * `throttled` preconfigurado con `BDPROCHOT: False` en `/etc/throttled.conf`.
+   * Servicio systemd de contingencia `surface-bdprochot-fallback.service` que limpia directamente el bit 0 de MSR `0x1FC` en arranque y reanudación.
+2. **Protección Anti-Brownout para 65W USB-C (`surface-nvidia-power-limit.service`):**
+   * Configuración central en `/etc/surface-power.conf`.
+   * Fuerza el modo de persistencia (`nvidia-smi -pm 1`).
+   * Capa el consumo de la GTX 1050 a **30W** (`nvidia-smi -pl 30`).
+   * Fija un techo de reloj gráfico a **1100 MHz** (`nvidia-smi -lgc 300,1100`) para frenar picos transitorios de boost.
+   * Modprobe en `/etc/modprobe.d/nvidia-power.conf` forzando PowerMizer Adaptive para evitar el estado P0 a máxima potencia.
 
 ---
 
 ## 📦 Software Integrado y Preconfigurado
 
 * **Navegador Web:** **LibreWolf** instalado de forma nativa vía su repositorio oficial (`https://repo.librewolf.net/librewolf.repo`).
-* **Compartición de periféricos (Software KVM):** **Deskflow** preinstalado nativamente vía RPM / Flatpak (`org.deskflow.Deskflow`) con soporte completo para Wayland (`libei`).
+* **Compartición de periféricos (Software KVM):** **Deskflow** preinstalado nativamente vía RPM / Flatpak (`org.deskflow.Deskflow`) con soporte nativo para Wayland (`libei`).
 * **Transferencia de archivos local:** **LocalSend** (`org.localsend.localsend_app`) integrado vía Flathub, provisionado automáticamente al primer arranque mediante el servicio desatendido `surface-firstboot.service`.
 
 ---
@@ -45,10 +61,10 @@ Repositorio y pipeline CI/CD con **GitHub Actions** para generar una imagen OCI 
   * Zona horaria: `America/Santo_Domingo` (UTC).
   * Usuario predefinido: `jsl` (perteneciente a `wheel` con privilegios `sudo`).
   * Contraseña inicial: `123123`.
-  * Particionado NVMe: Wiping completo automático (`zerombr`, `clearpart --all`), asignación generosa para `/boot/efi` (1GB) y `/boot` (2GB) para prevenir desbordamientos de initramfs.
+  * Particionado NVMe: Wiping completo automático (`zerombr`, `clearpart --all`), asignación generosa para `/boot/efi` (1GB) y `/boot` (2GB).
   * Reinicio automático al terminar (`reboot`).
 * **Generación de ISO:**
-  * **`bootc-image-builder`** (`quay.io/centos-bootc/bootc-image-builder:latest`) ejecutado en contenedor con `--type anaconda-iso` y `--local`.
+  * **`bootc-image-builder`** (`quay.io/centos-bootc/bootc-image-builder:latest`) con `--type anaconda-iso` y `--local`.
 
 ---
 
@@ -64,14 +80,16 @@ Repositorio y pipeline CI/CD con **GitHub Actions** para generar una imagen OCI 
 ├── config/
 │   ├── config.toml                 # Configuración de bootc-image-builder con Kickstart embebido
 │   ├── ks.cfg                      # Kickstart desatendido independiente
+│   ├── modprobe-nvidia-power.conf  # Opciones del kernel NVIDIA para PowerMizer Adaptive
 │   ├── recipe.yml                  # Receta declarativa BlueBuild v1
 │   ├── surface-dtx.conf            # Configuración del demonio de desacoplamiento de pantalla
-│   └── throttled.conf              # Configuración de energía y bypass BDPROCHOT
+│   ├── surface-power.conf          # Configuración del perfil de energía (65W USB-C)
+│   └── throttled.conf              # Perfil térmico CPU (PL1=15W, PL2=22W) y bypass BDPROCHOT
 ├── scripts/
 │   ├── disable-bd-prochot.sh       # Script de override directo MSR 0x1FC
 │   ├── setup-surface-kernel.sh     # Preparación y compilación de akmods
 │   ├── surface-firstboot.sh        # Aprovisionamiento desatendido de Flatpaks (LocalSend, Deskflow)
-│   └── surface-nvidia-power-limit.sh # Script de limitación de la GPU a 45W
+│   └── surface-nvidia-power-limit.sh # Script de limitación de la GPU a 30W / 1100 MHz
 ├── systemd/
 │   ├── surface-bdprochot-fallback.service # Servicio systemd para BDPROCHOT
 │   ├── surface-firstboot.service          # Servicio systemd de primer arranque
@@ -80,6 +98,19 @@ Repositorio y pipeline CI/CD con **GitHub Actions** para generar una imagen OCI 
 ├── .gitattributes
 ├── .gitignore
 └── README.md
+```
+
+---
+
+## 🔧 Personalización del Cargador en el Futuro
+
+Si en el futuro adquieres un cargador de 100W USB-C PD o el cargador original Surface Connect de 102W, puedes aumentar el límite de la GPU simplemente editando `/etc/surface-power.conf`:
+
+```bash
+sudo nano /etc/surface-power.conf
+# Cambiar GPU_TARGET_POWER_W=45
+# Cambiar GPU_MAX_CLOCK_MHZ=""
+sudo systemctl restart surface-nvidia-power-limit.service
 ```
 
 ---
@@ -94,20 +125,15 @@ Repositorio y pipeline CI/CD con **GitHub Actions** para generar una imagen OCI 
 
 ## 🚀 Cómo Lanzar la Compilación (GitHub Actions)
 
-El flujo de trabajo `.github/workflows/build.yml` está configurado con **`workflow_dispatch`** para evitar ejecuciones automáticas accidentales en el push de Git.
+El workflow `.github/workflows/build.yml` está en espera manual (`workflow_dispatch`).
 
 ### Opción A: Desde GitHub CLI (`gh`) en tu terminal
 ```powershell
-# Lanzar la compilación con los parámetros por defecto
 gh workflow run "Build Surface Book 2 Atomic ISO"
-
-# Monitorear el progreso en tiempo real
 gh run watch
 ```
 
-### Opción B: Desde la interfaz web de GitHub
+### Opción B: Desde GitHub Web
 1. Abre tu repositorio: [https://github.com/kalmix/surface-book2-atomic-iso/actions](https://github.com/kalmix/surface-book2-atomic-iso/actions)
 2. Selecciona **Build Surface Book 2 Atomic ISO** en la barra lateral.
 3. Pulsa **Run workflow** -> botón verde **Run workflow**.
-
-Al finalizar, la ISO (`surface-book-2-silverblue-40.iso`) y su suma SHA256 estarán disponibles como artefactos descargables listos para flashear en USB.
