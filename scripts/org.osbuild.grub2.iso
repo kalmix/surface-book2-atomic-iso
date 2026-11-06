@@ -18,12 +18,14 @@ function load_video {
 }
 
 load_video
-set gfxpayload=keep
+set gfxpayload=text
 insmod gzio
 insmod part_gpt
 insmod ext2
+insmod fat
+insmod iso9660
 
-set timeout=${timeout}
+set timeout=3
 ### END /etc/grub.d/00_header ###
 
 search --no-floppy --set=root -l '${isolabel}'
@@ -37,13 +39,15 @@ $troubleshootingentry
 
 CUSTOM_ENTRY_TEMPLATE = """
 menuentry '${name}' --class fedora --class gnu-linux --class gnu --class os {
+	set gfxpayload=text
 	linux ${linux}
 	initrd ${initrd}
 }"""
 
 INSTALL_ENTRY_TEMPLATE = """
-menuentry 'Install ${product} ${version}' --class fedora --class gnu-linux --class gnu --class os {
-	linux ${kernelpath} ${root} quiet
+menuentry 'Install ${product} ${version} (Surface Auto Boot)' --class fedora --class gnu-linux --class gnu --class os {
+	set gfxpayload=text
+	linux ${kernelpath} ${root} console=tty0 nomodeset acpi_backlight=vendor
 	initrd ${initrdpath}
 }"""
 
@@ -169,6 +173,8 @@ def main(root, options):
         default_tmpl = string.Template(DEFAULT_ENTRY_TEMPLATE)
         defaultentry = default_tmpl.safe_substitute({"default": default})
         tplt_variables["defaultentry"] = defaultentry
+    else:
+        tplt_variables["defaultentry"] = 'set default="0"\n'
 
     if len(custom):
         for entry in custom:
